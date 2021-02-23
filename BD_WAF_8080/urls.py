@@ -23,4 +23,5 @@ urlpatterns = [
     path('file/',include('rules_file.urls')),
     path('rule/',include('rules.urls')),
     path('BWlist/',include('BW_list.urls')),
+    path('log/',include('log.urls')),
 ]
