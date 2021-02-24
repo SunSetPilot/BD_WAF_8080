@@ -8,8 +8,8 @@ import json
 # Create your views here.
 def get_all_log(request):
     # 载入日志
-    logs = open(r'/tmp/modsec_audit.log','r').read()
-    logs = re.finditer(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
+    logs = open(r'/var/log/modsec_audit.log','r').read()
+    logs = re.findall(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
 
     # ip_loc_cache = {}
 
@@ -28,16 +28,17 @@ def get_all_log(request):
     reqjson = []
     logNum = 0
     # 解析日志
-    for log in logs:
+    for log in logs[-100:]:
         # 原始日志
-        original = log.group()
+        original = log
 
         # 攻击时间
         attTime = re.search(r"\d\d/[a-zA-Z]{3}/\d{4}:\d{2}:\d{2}:\d{2}", original).group()
         attTime = datetime.datetime.strptime(attTime, "%d/%b/%Y:%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         
         # 攻击URL = Host + URI （改为攻击HOST）
-        attHost = re.search(r"Host: (.*?)\n", original)[1] # 攻击Host
+        Host_tmp = re.search(r"Host: (.*?)\n", original)
+        attHost = 'Unknow' if Host_tmp == None else Host_tmp[1] # 攻击Host
         attURI = re.search(r" (.*?) HTTP", original)[1] # 攻击URI
         attURL = attHost + attURI if attURI != '/' else attHost
 
@@ -83,12 +84,12 @@ def get_all_log(request):
             req = {"attTime":attTime, "attHost":attHost, "attIP":attIP, "attURI":attURI, "ruleID":ruleID, "reqMethod":reqMethod, "ruleMsg":ruleMsg, "actt":actt, "logNum":logNum}
             reqjson.append(req)
 
-    return JsonResponse(reqjson,safe=False)
+    return JsonResponse(reqjson[::-1],safe=False)
 
 def get_selected_log(request):
-# 载入日志
-    logs = open(r'/tmp/modsec_audit.log','r').read()
-    logs = re.finditer(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
+    # 载入日志
+    logs = open(r'/var/log/modsec_audit.log','r').read()
+    logs = re.findall(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
 
     # ip_loc_cache = {}
 
@@ -107,16 +108,17 @@ def get_selected_log(request):
     reqjson = []
     logNum = 0
     # 解析日志
-    for log in logs:
+    for log in logs[-100:]:
         # 原始日志
-        original = log.group()
+        original = log
 
         # 攻击时间
         attTime = re.search(r"\d\d/[a-zA-Z]{3}/\d{4}:\d{2}:\d{2}:\d{2}", original).group()
         attTime = datetime.datetime.strptime(attTime, "%d/%b/%Y:%H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         
         # 攻击URL = Host + URI （改为攻击HOST）
-        attHost = re.search(r"Host: (.*?)\n", original)[1] # 攻击Host
+        Host_tmp = re.search(r"Host: (.*?)\n", original)
+        attHost = 'Unknow' if Host_tmp == None else Host_tmp[1] # 攻击Host
         attURI = re.search(r" (.*?) HTTP", original)[1] # 攻击URI
         attURL = attHost + attURI if attURI != '/' else attHost
 
@@ -162,22 +164,22 @@ def get_selected_log(request):
             req = {"attTime":attTime, "attHost":attHost, "attIP":attIP, "attURI":attURI, "ruleID":ruleID, "reqMethod":reqMethod, "ruleMsg":ruleMsg, "actt":actt, "logNum":logNum}
             reqjson.append(req)
 
-    return JsonResponse(reqjson,safe=False)
+    return JsonResponse(reqjson[::-1],safe=False)
 
 def get_detailed_log(request):
     # 载入日志
-    logs = open('/tmp/modsec_audit.log','r').read()
-    logs = re.finditer(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
+    logs = open('modsec_audit.log','r').read()
+    logs = re.findall(r"---[\da-zA-Z]{8}---A--[\s\S]*?---[\da-zA-Z]{8}---Z--",logs)
 
     logNum = 0
     reqjson = []
     # 解析日志
-    for log in logs:
+    for log in logs[-100:]:
         # 原始日志
-        original = log.group()
+        original = log
         requestbody = re.search(r'---B--\n((.|\n)*?)---', original)[1]
-        # attIP = re.search(r"---A--\n\[.*?\] \d+ (.*?) ", original)[1]
         responsebody = re.search(r'---F--\n((.|\n)*?)---', original)[1]
+        responsebody2 = re.search(r'---E--\n((.|\n)*?)---', original)[1]
         logNum += 1
-        reqjson.append({'t':requestbody + responsebody,'logNum':logNum})
-    return JsonResponse(reqjson,safe=False)
+        reqjson.append({'t':requestbody + responsebody + responsebody2, 'logNum':logNum})
+    return JsonResponse(reqjson[::-1],safe=False)
